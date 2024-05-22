@@ -3,3 +3,6 @@ uvicorn[standard]
 requests
 pillow
 bcrypt
+sqlalchemy
+psycopg2
+scikit-learn
