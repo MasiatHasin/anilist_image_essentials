@@ -10,7 +10,7 @@ class Setting(Base):
 
     id = Column(Integer, primary_key=True)
     owner_id = Column(Integer, ForeignKey("users.id"))
-    current_colors = Column(String)
+    current_colors = Column(String, nullable=True)
 
     owner_setting = relationship("User", back_populates="settings", uselist=False)
 

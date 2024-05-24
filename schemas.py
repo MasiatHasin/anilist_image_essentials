@@ -19,7 +19,14 @@ class ExtractColors(BaseModel):
     num_colors: int = 10
 
 
-class ImageCreate(BaseModel):
+class ImageUser(BaseModel):
+    username: str
+
+    class Config:
+        orm_mode = True
+
+
+class ImageCreate(ImageUser):
     name: str
     url: str
     type: int
@@ -31,6 +38,7 @@ class ImageCreate(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
+    anilist_name: str
 
 
 class UserView(BaseModel):

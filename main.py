@@ -24,14 +24,14 @@ def get_db():
 app = FastAPI()
 
 
-@app.get("/generate-image")
+@app.get("/generate-image/")
 def generate_image(name: str, username: str, db: Session = Depends(get_db)):
     image = crud.get_image_by_name(name, username, db)
-    hex_color = crud.get_hex_color_code(username, db, image.type)
+    hex_color = crud.get_hex_color_code(db, username, image.type)
     retry_count = 5
     result = None
     while result is None and retry_count > 0:
-        result = generate_image_helper(name)
+        result = generate_image_helper(image.url, hex_color)
         retry_count -= 1
         print("retrying")
 
@@ -56,26 +56,41 @@ def extract_colors(
     return Response(content=result, status_code=200)
 
 
+# Create Users
 @app.post("/users/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_name(db, user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="User already registered")
-    return crud.create_user(db=db, user=user)
+    return crud.register_user(db=db, user=user)
 
 
+# Get Users
 @app.get("/users/", response_model=list[schemas.UserView])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     users = crud.get_users(db, skip=skip, limit=limit)
     return users
 
 
+# Get a User
 @app.get("/users/{username}/", response_model=schemas.User)
 def read_users(username: str, db: Session = Depends(get_db)):
     user = crud.get_user_by_name(db, username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+# Post Images
+@app.post("/image/")
+def post_image(image: schemas.ImageCreate, db: Session = Depends(get_db)):
+    try:
+        user = crud.get_user_by_name(db, image.username)
+        image = crud.post_image(db, image, user.id)
+        return image
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=404, detail="User not found")
 
 
 if __name__ == "__main__":

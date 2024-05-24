@@ -9,6 +9,7 @@ import cv2
 import crud
 from PIL import Image
 from collections import Counter
+from sqlalchemy.orm import Session
 
 
 def hex_to_bgr(hex_code: str):
