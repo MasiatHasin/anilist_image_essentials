@@ -16,7 +16,7 @@ class ExtractColors(BaseModel):
     username: str
     password: str
     image_url: HttpUrl
-    num_colors: int | None = 5
+    num_colors: int
 
 
 class ImageUser(BaseModel):
