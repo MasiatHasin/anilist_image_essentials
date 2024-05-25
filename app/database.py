@@ -16,7 +16,7 @@ import os
     password=os.environ["POSTGRES_PASSWORD"],
 ) """
 
-engine = create_engine(os.environ["POSTGRES_URL"])
+engine = create_engine(os.getenv("POSTGRES_URL"))
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
