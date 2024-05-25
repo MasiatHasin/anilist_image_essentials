@@ -2,12 +2,9 @@ fastapi
 uvicorn
 sqlalchemy
 pillow
-scikit-learn
-opencv-python
 bcrypt
 numpy
 requests
 python-dotenv
 mysqlclient
-opencv-python
 load_dotenv
