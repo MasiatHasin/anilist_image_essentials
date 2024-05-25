@@ -16,7 +16,7 @@ class ExtractColors(BaseModel):
     username: str
     password: str
     image_url: HttpUrl
-    num_colors: int = 10
+    num_colors: int | None = 5
 
 
 class ImageUser(BaseModel):
@@ -44,6 +44,7 @@ class UserCreate(BaseModel):
 class UserView(BaseModel):
     id: int
     username: str
+    anilist_name: str
 
 
 class User(UserView):

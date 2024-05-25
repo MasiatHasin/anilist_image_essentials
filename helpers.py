@@ -6,7 +6,6 @@ from sklearn.cluster import KMeans
 import numpy as np
 import time
 import cv2
-import crud
 from PIL import Image
 from collections import Counter
 from sqlalchemy.orm import Session
@@ -121,8 +120,6 @@ def extract_colors_helper(image_url: str, num_colors: int = 5):
     pixels = image_array.reshape(-1, 3)
 
     # Define the number of dominant colors you want to extract
-    num_colors = 10  # Adjust the number of colors as needed
-
     # Use KMeans clustering to find the dominant colors
     kmeans = KMeans(n_clusters=num_colors)
     kmeans.fit(pixels)

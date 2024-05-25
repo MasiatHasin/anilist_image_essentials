@@ -27,6 +27,11 @@ app = FastAPI()
 @app.get("/generate-image/")
 def generate_image(name: str, username: str, db: Session = Depends(get_db)):
     image = crud.get_image_by_name(name, username, db)
+    if not image:
+        return HTTPException(
+            detail="Image not found. Are you sure you registered the image?",
+            status_code=404,
+        )
     hex_color = crud.get_hex_color_code(db, username, image.type)
     retry_count = 5
     result = None
@@ -93,7 +98,14 @@ def post_image(image: schemas.ImageCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
 
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Root Info
+@app.get("/", tags=["Root"])
+def root():
+    return Response(
+        content="""<html>
+                     <body>
+                       <p>Welcome to the Anilist Essentials API by Mashiat.</p>
+                       <p>Go to <a href='/docs/'>/docs/</a> for documentation.</p>
+                     </body>
+                   </html>"""
+    )

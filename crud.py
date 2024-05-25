@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-import models, schemas, math, random
+import models, schemas
+import math, random
 import bcrypt
-from sqlalchemy.orm import joinedload
 
 
 def db_save(db: Session, db_instance):
@@ -23,7 +23,9 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 
 def register_user(db: Session, user: schemas.UserCreate):
-    db_user = models.User(username=user.username, password=user.password)
+    db_user = models.User(
+        username=user.username, password=user.password, anilist_name=user.anilist_name
+    )
     db_save(db, db_user)
     db_setting = models.Setting(owner_id=db_user.id)
     db_save(db, db_setting)
