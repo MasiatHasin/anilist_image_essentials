@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSON
 
-import database
+from . import database
 
 Base = database.Base
 
