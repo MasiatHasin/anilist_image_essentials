@@ -6,4 +6,4 @@ bcrypt
 numpy
 requests
 python-dotenv
-mysqlclient
+psycopg2-binary
