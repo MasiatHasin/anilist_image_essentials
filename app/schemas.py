@@ -6,38 +6,18 @@ from pydantic import HttpUrl
 class Settings(BaseModel):
     id: int
     owner_id: int
-    current_colors: str
+    current_color: str | None = None
 
     class Config:
         orm_mode = True
 
 
-class ExtractColors(BaseModel):
+class UserCred(BaseModel):
     username: str
     password: str
-    image_url: HttpUrl
-    num_colors: int
 
 
-class ImageUser(BaseModel):
-    username: str
-
-    class Config:
-        orm_mode = True
-
-
-class ImageCreate(ImageUser):
-    name: str
-    url: str
-    type: int
-
-    class Config:
-        orm_mode = True
-
-
-class UserCreate(BaseModel):
-    username: str
-    password: str
+class UserCreate(UserCred):
     anilist_name: str
 
 
@@ -49,8 +29,22 @@ class UserView(BaseModel):
 
 class User(UserView):
     username: str
+    anilist_name: str
     settings: Optional[Settings] = {}
-    images: Optional[List[ImageCreate]] = []
 
     class Config:
         orm_mode = True
+
+
+class ActivityCreate(BaseModel):
+    user: UserCred
+    activity_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class Activity(BaseModel):
+    id: int
+    owner_id: int
+    activity_id: int

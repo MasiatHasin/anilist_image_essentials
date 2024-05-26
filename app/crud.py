@@ -22,6 +22,18 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
 
 
+def get_activities(
+    db: Session, user: schemas.UserCred, skip: int = 0, limit: int = 100
+):
+    user = validate_data(db, user)
+    return (
+        db.query(models.Activity)
+        .filter(models.Activity.owner_id == user.id)
+        .offset(skip)
+        .limit(limit)
+    )
+
+
 def register_user(db: Session, user: schemas.UserCreate):
     db_user = models.User(
         username=user.username, password=user.password, anilist_name=user.anilist_name
@@ -32,63 +44,32 @@ def register_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
-def post_image(db: Session, image: schemas.ImageCreate, user_id: int):
-    db_image = models.Image(
-        name=image.name, url=image.url, type=image.type, owner_id=user_id
-    )
-    db_save(db, db_image)
-    return db_image
-
-
-def get_image_by_name(name: str, username: str, db: Session):
-    user = get_user_by_name(db, username)
-    image = (
-        db.query(models.Image)
-        .filter(models.Image.name == name, models.Image.owner_id == user.id)
+def activity_exists(db: Session, activity_id: int):
+    return (
+        db.query(models.Activity)
+        .filter(models.Activity.activity_id == activity_id)
         .first()
     )
-    return image
 
 
-def get_hex_color_code(db: Session, username: str, image_type: int):
-    user = get_user_by_name(db, username)
-    setting = (
-        db.query(models.Setting).filter(models.Setting.owner_id == user.id).first()
-    )
-    current_colors = setting.current_colors
-    current_colors = current_colors.split(" ")
-    current_colors.reverse()
-    if image_type <= len(current_colors) - 1:
-        hex_color_code = current_colors[image_type]
-    else:
-        rand_type = random.randint(
-            math.ceil(len(current_colors) // 2), len(current_colors) - 1
-        )
-        hex_color_code = current_colors[rand_type]
-    return hex_color_code
-
-
-def check_user_cred(data: schemas.ExtractColors, db: Session):
-    user = (
+def validate_data(db: Session, data: schemas.ActivityCreate):
+    return (
         db.query(models.User)
         .filter(
-            models.User.username == data.username,
-            models.User.password == data.password,
+            models.User.password == data.password, models.User.username == data.username
         )
         .first()
     )
-    if user is not None:
-        return True
-    return False
 
 
-def save_colors(data: schemas.ExtractColors, result: str, db: Session):
-    if not check_user_cred(data, db):
-        return False
-    user = get_user_by_name(db, data.username)
-    user_setting = (
-        db.query(models.Setting).filter(models.Setting.owner_id == user.id).first()
-    )
-    user_setting.current_colors = result
-    db.commit()
-    return True
+def register_activity(db: Session, data: schemas.ActivityCreate):
+    user = validate_data(db, data.user)
+    if not user:
+        return None
+    db_activity = models.Activity(owner_id=user.id, activity_id=data.activity_id)
+    db_save(db, db_activity)
+    return db_activity
+
+
+def user_activity_exists(db, user_id, activity_id):
+    return db.query(models.Activity).filter(models.Activity.owner_id == user_id)

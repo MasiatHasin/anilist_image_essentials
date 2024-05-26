@@ -16,7 +16,9 @@ import os
     password=os.environ["POSTGRES_PASSWORD"],
 ) """
 
-engine = create_engine(os.getenv("POSTGRES_URL"))
+postgres_str = "postgresql://postgres:eyeDGAF<3@localhost/anilist"
+
+engine = create_engine(postgres_str)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

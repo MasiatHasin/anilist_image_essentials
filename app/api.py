@@ -1,13 +1,12 @@
-from fastapi.responses import StreamingResponse, Response
-from .helpers import (
-    extract_colors_helper,
-    generate_image_helper,
-)
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import Response, RedirectResponse
+from fastapi import FastAPI, Depends, HTTPException, Request
 
 from .database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from . import models, crud, schemas
+
+import bcrypt
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -24,45 +23,8 @@ def get_db():
 app = FastAPI()
 
 
-@app.get("/generate-image/")
-def generate_image(name: str, username: str, db: Session = Depends(get_db)):
-    image = crud.get_image_by_name(name, username, db)
-    if not image:
-        return HTTPException(
-            detail="Image not found. Are you sure you registered the image?",
-            status_code=404,
-        )
-    hex_color = crud.get_hex_color_code(db, username, image.type)
-    retry_count = 5
-    result = None
-    while result is None and retry_count > 0:
-        result = generate_image_helper(image.url, hex_color)
-        retry_count -= 1
-        print("retrying")
-
-    return StreamingResponse(result, media_type="image/png")
-
-
-@app.post("/extract-colors/")
-def extract_colors(
-    data: schemas.ExtractColors,
-    db: Session = Depends(get_db),
-):
-    if not crud.check_user_cred(data, db):
-        return HTTPException(detail="Unauthorized", status_code=401)
-    retry_count = 5
-    result = None
-    while result is None and retry_count > 0:
-        result = extract_colors_helper(data.image_url, data.num_colors)
-        retry_count -= 1
-        print("retrying")
-    if not crud.save_colors(data, result, db):
-        return HTTPException(detail="An error occured", status_code=500)
-    return Response(content=result, status_code=200)
-
-
 # Create Users
-@app.post("/users/", response_model=schemas.User)
+@app.post("/user/", response_model=schemas.User)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = crud.get_user_by_name(db, user.username)
     if db_user:
@@ -71,31 +33,19 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 
 # Get Users
-@app.get("/users/", response_model=list[schemas.UserView])
+@app.get("/user/", response_model=list[schemas.UserView])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     users = crud.get_users(db, skip=skip, limit=limit)
     return users
 
 
 # Get a User
-@app.get("/users/{username}/", response_model=schemas.User)
-def read_users(username: str, db: Session = Depends(get_db)):
-    user = crud.get_user_by_name(db, username)
+@app.get("/user/{id}/", response_model=schemas.User)
+def read_users(id: int, db: Session = Depends(get_db)):
+    user = crud.get_user(db, id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
-
-# Post Images
-@app.post("/image/")
-def post_image(image: schemas.ImageCreate, db: Session = Depends(get_db)):
-    try:
-        user = crud.get_user_by_name(db, image.username)
-        image = crud.post_image(db, image, user.id)
-        return image
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=404, detail="User not found")
 
 
 # Root Info
@@ -109,3 +59,68 @@ def root():
                      </body>
                    </html>"""
     )
+
+
+[
+    (b"connection", b"close"),
+    (b"x-forwarded-for", b"114.130.184.79,::ffff:10.10.11.55,::ffff:10.10.87.49"),
+    (b"x-forwarded-proto", b"https,http,http"),
+    (b"x-forwarded-port", b"443,80,80"),
+    (b"host", b"anilist-essentials.glitch.me"),
+    (
+        b"user-agent",
+        b"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
+    ),
+    (
+        b"accept",
+        b"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    ),
+    (b"accept-language", b"en-US,en;q=0.5"),
+    (b"accept-encoding", b"gzip, deflate, br, zstd"),
+    (b"referer", b"https://glitch.com/"),
+    (b"upgrade-insecure-requests", b"1"),
+    (b"sec-fetch-dest", b"iframe"),
+    (b"sec-fetch-mode", b"navigate"),
+    (b"sec-fetch-site", b"cross-site"),
+    (b"priority", b"u=4"),
+    (b"pragma", b"no-cache"),
+    (b"cache-control", b"no-cache"),
+    (b"x-forwarded-host", b"anilist-essentials.glitch.me"),
+    (b"traceparent", b"00-7bfbec9fb2964267b5cbeb0c87bdd782-e71c5841cee04a62-01"),
+]
+
+
+# Create Users
+@app.post("/activity/", response_model=schemas.Activity)
+def create_activity(data: schemas.ActivityCreate, db: Session = Depends(get_db)):
+    if crud.activity_exists(db, data.activity_id):
+        raise HTTPException(status_code=400, detail="Activity already registered")
+    activity = crud.register_activity(db, data)
+    if activity is None:
+        raise HTTPException(status_code=400, detail="Incorrect Credentials")
+    return activity
+
+
+@app.get("/activity/", response_model=list[schemas.Activity])
+def get_activity(
+    user: schemas.UserCred,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    activities = crud.get_activities(db, user, skip=skip, limit=limit)
+    return activities
+
+
+@app.get("/user/{user_id}/image/{image_name}/{activity_id_hash}")
+def get_image(
+    user_id: int,
+    image_name: str,
+    activity_id: int,
+    db: Session = Depends(get_db),
+):
+    result = crud.user_activity_exists(db, user_id, activity_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Incorrect Information")
+    image_url = f"https://raw.githubusercontent.com/MasiatHasin/MasiatHasin.github.io/main/{image_name}.jpg"
+    return RedirectResponse(image_url)

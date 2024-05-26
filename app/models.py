@@ -11,21 +11,9 @@ class Setting(Base):
 
     id = Column(Integer, primary_key=True)
     owner_id = Column(Integer, ForeignKey("users.id"))
-    current_colors = Column(String(50), nullable=True)
+    current_color = Column(String(50), nullable=True)
 
     owner_setting = relationship("User", back_populates="settings", uselist=False)
-
-
-class Image(Base):
-    __tablename__ = "images"
-
-    id = Column(Integer, primary_key=True)
-    owner_id = Column(Integer, ForeignKey("users.id"))
-    name = Column(String(50))
-    url = Column(String(50))
-    type = Column(Integer)
-
-    owner_image = relationship("User", back_populates="images")
 
 
 class User(Base):
@@ -36,7 +24,19 @@ class User(Base):
     password = Column(String(50))
     anilist_name = Column(String(50))
 
-    images = relationship("Image", back_populates="owner_image", cascade="all, delete")
     settings = relationship(
         "Setting", back_populates="owner_setting", cascade="all, delete", uselist=False
     )
+    activities = relationship(
+        "Activity", back_populates="owner_activity", cascade="all, delete"
+    )
+
+
+class Activity(Base):
+    __tablename__ = "activities"
+
+    id = Column(Integer, primary_key=True)
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    activity_id = Column(Integer)
+
+    owner_activity = relationship("User", back_populates="activities")

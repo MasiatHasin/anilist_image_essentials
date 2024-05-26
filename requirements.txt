@@ -7,3 +7,4 @@ numpy
 requests
 python-dotenv
 psycopg2-binary
+fastapi-jwt[authlib]
