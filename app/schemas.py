@@ -18,18 +18,18 @@ class UserCred(BaseModel):
 
 
 class UserCreate(UserCred):
-    anilist_name: str
+    anilist_id: str
 
 
 class UserView(BaseModel):
     id: int
     username: str
-    anilist_name: str
+    anilist_id: str
 
 
 class User(UserView):
     username: str
-    anilist_name: str
+    anilist_id: str
     settings: Optional[Settings] = {}
 
     class Config:

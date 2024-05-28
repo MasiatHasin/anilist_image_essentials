@@ -22,7 +22,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(50))
     password = Column(String(50))
-    anilist_name = Column(String(50))
+    anilist_id = Column(String(50))
 
     settings = relationship(
         "Setting", back_populates="owner_setting", cascade="all, delete", uselist=False
