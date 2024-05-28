@@ -1,11 +1,12 @@
-from fastapi.responses import Response, RedirectResponse
+from fastapi.responses import Response, RedirectResponse, StreamingResponse
 from fastapi import FastAPI, Depends, HTTPException, Request
 
 from .database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from . import models, crud, schemas, helpers
 
-import bcrypt
+import bcrypt, requests
+from io import BytesIO
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -83,6 +84,19 @@ def get_activity(
     return activities
 
 
+# Create Image
+@app.post("/image/", response_model=schemas.Image)
+def create_activity(data: schemas.ImageCreate, db: Session = Depends(get_db)):
+    if crud.image_exists(db, data):
+        raise HTTPException(
+            status_code=400, detail="Image with this name already exists"
+        )
+    image = crud.register_image(db, data)
+    if image is None:
+        raise HTTPException(status_code=400, detail="Incorrect Credentials")
+    return image
+
+
 @app.get("/user/{user_id}/image/{image_name}/{activity_id}")
 def get_image(
     user_id: int,
@@ -90,10 +104,22 @@ def get_image(
     activity_id: int,
     db: Session = Depends(get_db),
 ):
-    anilist_activity = helpers.get_anilist_activity(activity_id)
-    print(anilist_activity)
-    result = crud.user_activity_exists(db, user_id, activity_id)
+    # anilist_activity = helpers.get_anilist_activity(activity_id)
+    """result = crud.user_activity_exists(db, user_id, activity_id)
     if not result:
-        raise HTTPException(status_code=404, detail="Incorrect Information")
-    image_url = f"https://raw.githubusercontent.com/MasiatHasin/MasiatHasin.github.io/main/{image_name}.jpg"
-    return RedirectResponse(image_url)
+        raise HTTPException(status_code=404, detail="Incorrect Information")"""
+    image = crud.get_image_by_name(db, user_id, image_name)
+    headers = {"User-Agent": "Mozilla/5.0"}
+    if not image:
+        raise HTTPException(status_code=400, detail="Incorrect Data")
+    try:
+        response = requests.get(image.url, headers=headers, stream=True)
+        if response.status_code != 200:
+            raise HTTPException(status_code=404, detail="Image not found")
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Error accessing image: {e}")
+
+    # Use StreamingResponse to stream the image data
+    return StreamingResponse(
+        BytesIO(response.content), media_type=response.headers.get("Content-Type")
+    )

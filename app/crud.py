@@ -36,7 +36,7 @@ def get_activities(
 
 def register_user(db: Session, user: schemas.UserCreate):
     db_user = models.User(
-        username=user.username, password=user.password, anilist_name=user.anilist_name
+        username=user.username, password=user.password, anilist_id=user.anilist_id
     )
     db_save(db, db_user)
     db_setting = models.Setting(owner_id=db_user.id)
@@ -73,3 +73,31 @@ def register_activity(db: Session, data: schemas.ActivityCreate):
 
 def user_activity_exists(db, user_id, activity_id):
     return db.query(models.Activity).filter(models.Activity.owner_id == user_id)
+
+
+def image_exists(db: Session, data: schemas.ImageCreate):
+    user = validate_data(db, data.user)
+    if (
+        db.query(models.Image)
+        .filter(models.Image.owner_id == user.id, models.Image.name == data.name)
+        .first()
+    ):
+        return True
+    return None
+
+
+def register_image(db: Session, data: schemas.ImageCreate):
+    user = validate_data(db, data.user)
+    if not user:
+        return None
+    db_image = models.Image(owner_id=user.id, name=data.name, url=str(data.url))
+    db_save(db, db_image)
+    return db_image
+
+
+def get_image_by_name(db: Session, user_id: int, image_name: str):
+    return (
+        db.query(models.Image)
+        .filter(models.Image.owner_id == user_id, models.Image.name == image_name)
+        .first()
+    )

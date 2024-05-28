@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, AnyUrl
 from typing import Dict, Optional, List
 from pydantic import HttpUrl
 
@@ -48,3 +48,19 @@ class Activity(BaseModel):
     id: int
     owner_id: int
     activity_id: int
+
+
+class ImageCreate(BaseModel):
+    user: UserCred
+    name: str
+    url: AnyUrl
+
+    class Config:
+        orm_mode = True
+
+
+class Image(BaseModel):
+    id: int
+    owner_id: int
+    name: str
+    url: AnyUrl
