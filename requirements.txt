@@ -7,4 +7,4 @@ numpy
 requests
 python-dotenv
 fastapi-jwt[authlib]
-mysqlclient==2.1.1
+pymysql
