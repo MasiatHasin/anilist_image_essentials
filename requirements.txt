@@ -6,5 +6,5 @@ bcrypt
 numpy
 requests
 python-dotenv
-psycopg2-binary
 fastapi-jwt[authlib]
+mysqlclient==2.1.1
