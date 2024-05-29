@@ -6,7 +6,7 @@ from pydantic import HttpUrl
 class Settings(BaseModel):
     id: int
     owner_id: int
-    current_color: str | None = None
+    current_color: str
 
     class Config:
         orm_mode = True
